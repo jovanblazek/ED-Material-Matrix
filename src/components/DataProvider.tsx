@@ -1,11 +1,12 @@
 import { BLUEPRINTS } from '@/blueprints'
 import { createContext, useContext, useMemo, useState } from 'react'
-import type { Blueprint } from '@/types'
+import type { Blueprint, BlueprintType } from '@/types'
 
 type DataContextType = {
   materialBlueprintsCount: MaterialBlueprints
   ignoredBlueprints: string[]
   setIgnoredBlueprints: (blueprints: string[]) => void
+  blueprintsByType: Record<BlueprintType, Blueprint[]>
 }
 
 type MaterialBlueprints = {
@@ -16,6 +17,7 @@ export const DataContext = createContext<DataContextType>({
   materialBlueprintsCount: {} as MaterialBlueprints,
   ignoredBlueprints: [] as string[],
   setIgnoredBlueprints: () => {},
+  blueprintsByType: {} as Record<BlueprintType, Blueprint[]>,
 })
 
 const getBlueprintId = (blueprint: Blueprint) => {
@@ -28,11 +30,12 @@ const getBlueprintId = (blueprint: Blueprint) => {
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [ignoredBlueprints, setIgnoredBlueprints] = useState<string[]>([])
 
+  const filteredBlueprints = useMemo(() => {
+    return BLUEPRINTS.filter((blueprint) => !ignoredBlueprints.includes(getBlueprintId(blueprint)))
+  }, [ignoredBlueprints])
+
   const materialBlueprintsCount: MaterialBlueprints = useMemo(() => {
-    const blueprintsWithoutIgnored = BLUEPRINTS.filter(
-      (blueprint) => !ignoredBlueprints.includes(getBlueprintId(blueprint)),
-    )
-    return blueprintsWithoutIgnored.reduce((acc, blueprint) => {
+    return filteredBlueprints.reduce((acc, blueprint) => {
       blueprint.Ingredients.forEach((material) => {
         acc[material.Name] = (acc[material.Name] || 0) + material.Size
       })
@@ -40,13 +43,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }, {} as MaterialBlueprints)
   }, [ignoredBlueprints])
 
+  const blueprintsByType = useMemo(() => {
+    return filteredBlueprints.reduce((acc, blueprint) => {
+      acc[blueprint.type] = (acc[blueprint.type] || []).concat(blueprint)
+      return acc
+    }, {} as Record<BlueprintType, Blueprint[]>)
+  }, [filteredBlueprints])
+
   const value: DataContextType = useMemo(
     () => ({
       materialBlueprintsCount,
       ignoredBlueprints,
       setIgnoredBlueprints,
+      blueprintsByType,
     }),
-    [materialBlueprintsCount, ignoredBlueprints],
+    [materialBlueprintsCount, ignoredBlueprints, blueprintsByType],
   )
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>
