@@ -1,6 +1,6 @@
+import { createFileRoute } from '@tanstack/react-router'
 import { DataProvider } from '@/components/DataProvider'
 import { MaterialTable } from '@/components/MaterialTable'
-import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/')({
   component: App,

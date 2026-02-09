@@ -1,3 +1,5 @@
+import { useMemo } from 'react'
+import { useDataContext } from './DataProvider'
 import {
   Table,
   TableBody,
@@ -7,8 +9,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { MATERIALS } from '@/materials'
-import { useDataContext } from './DataProvider'
-import { useMemo } from 'react'
 import { getColorForValue } from '@/lib/utils'
 
 interface MaterialTableProps {

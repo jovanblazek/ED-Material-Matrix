@@ -59,9 +59,9 @@ type BlueprintType =
 interface Blueprint {
   Type: string
   Name: string
-  Engineers: string[]
-  Ingredients: Ingredient[]
-  Effects?: Effect[] // No effects means synthesis
+  Engineers: Array<string>
+  Ingredients: Array<Ingredient>
+  Effects?: Array<Effect> // No effects means synthesis
   Grade?: number // No grade means tech broker unlock for example
   CoriolisGuid?: string
   id: string

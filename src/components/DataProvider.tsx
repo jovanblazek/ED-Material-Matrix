@@ -1,12 +1,12 @@
-import { BLUEPRINTS } from '@/blueprints'
 import { createContext, useContext, useMemo, useState } from 'react'
 import type { Blueprint, BlueprintType } from '@/types'
+import { BLUEPRINTS } from '@/blueprints'
 
 type DataContextType = {
   materialBlueprintsCount: MaterialBlueprints
-  ignoredBlueprints: string[]
-  setIgnoredBlueprints: (blueprints: string[]) => void
-  blueprintsByType: Record<BlueprintType, Blueprint[]>
+  ignoredBlueprints: Array<string>
+  setIgnoredBlueprints: (blueprints: Array<string>) => void
+  blueprintsByType: Record<BlueprintType, Array<Blueprint>>
 }
 
 type MaterialBlueprints = {
@@ -15,9 +15,9 @@ type MaterialBlueprints = {
 
 export const DataContext = createContext<DataContextType>({
   materialBlueprintsCount: {} as MaterialBlueprints,
-  ignoredBlueprints: [] as string[],
+  ignoredBlueprints: [] as Array<string>,
   setIgnoredBlueprints: () => {},
-  blueprintsByType: {} as Record<BlueprintType, Blueprint[]>,
+  blueprintsByType: {} as Record<BlueprintType, Array<Blueprint>>,
 })
 
 const getBlueprintId = (blueprint: Blueprint) => {
@@ -28,10 +28,12 @@ const getBlueprintId = (blueprint: Blueprint) => {
 }
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
-  const [ignoredBlueprints, setIgnoredBlueprints] = useState<string[]>([])
+  const [ignoredBlueprints, setIgnoredBlueprints] = useState<Array<string>>([])
 
   const filteredBlueprints = useMemo(() => {
-    return BLUEPRINTS.filter((blueprint) => !ignoredBlueprints.includes(getBlueprintId(blueprint)))
+    return BLUEPRINTS.filter(
+      (blueprint) => !ignoredBlueprints.includes(getBlueprintId(blueprint)),
+    )
   }, [ignoredBlueprints])
 
   const materialBlueprintsCount: MaterialBlueprints = useMemo(() => {
@@ -44,10 +46,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [ignoredBlueprints])
 
   const blueprintsByType = useMemo(() => {
-    return filteredBlueprints.reduce((acc, blueprint) => {
-      acc[blueprint.type] = (acc[blueprint.type] || []).concat(blueprint)
-      return acc
-    }, {} as Record<BlueprintType, Blueprint[]>)
+    return filteredBlueprints.reduce(
+      (acc, blueprint) => {
+        // False positive
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        acc[blueprint.type] = (acc[blueprint.type] || []).concat(blueprint)
+        return acc
+      },
+      {} as Record<BlueprintType, Array<Blueprint>>,
+    )
   }, [filteredBlueprints])
 
   const value: DataContextType = useMemo(

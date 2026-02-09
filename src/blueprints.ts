@@ -1,7 +1,7 @@
 import type { Blueprint } from './types'
 
 // @ts-expect-error TOO long for TS
-export const BLUEPRINTS: Blueprint[] = [
+export const BLUEPRINTS: Array<Blueprint> = [
   {
     Type: 'Plasma Accelerator',
     Name: 'Short Range Blaster',
