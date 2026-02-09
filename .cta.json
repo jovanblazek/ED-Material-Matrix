@@ -1,13 +1,15 @@
 {
-  "projectName": ".",
+  "projectName": "ed-material-matrix-1",
   "mode": "file-router",
   "typescript": true,
-  "tailwind": true,
-  "packageManager": "pnpm",
+  "tailwind": false,
+  "packageManager": "npm",
   "git": true,
+  "install": true,
+  "addOnOptions": {},
   "version": 1,
   "framework": "react-cra",
   "chosenAddOns": [
-    "eslint"
+    "start"
   ]
 }

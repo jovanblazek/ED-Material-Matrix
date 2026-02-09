@@ -1,21 +1,37 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { DataProvider } from '@/components/DataProvider'
-import { MaterialTable } from '@/components/MaterialTable'
+import '../App.css'
 
-export const Route = createFileRoute('/')({
-  component: App,
-})
+export const Route = createFileRoute('/')({ component: App })
 
 function App() {
   return (
-    <DataProvider>
-      <div className="min-h-screen container mx-auto">
-        <div className="flex flex-col justify-center gap-8 p-4">
-          <MaterialTable type="encoded" />
-          <MaterialTable type="manufactured" />
-          <MaterialTable type="raw" />
-        </div>
-      </div>
-    </DataProvider>
+    <div className="App">
+      <header className="App-header">
+        <img
+          src="/tanstack-circle-logo.png"
+          className="App-logo"
+          alt="TanStack Logo"
+        />
+        <p>
+          Edit <code>src/routes/index.tsx</code> and save to reload.
+        </p>
+        <a
+          className="App-link"
+          href="https://reactjs.org"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Learn React
+        </a>
+        <a
+          className="App-link"
+          href="https://tanstack.com"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Learn TanStack
+        </a>
+      </header>
+    </div>
   )
 }
