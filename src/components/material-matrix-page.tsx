@@ -1,7 +1,11 @@
 import { useMemo, useState } from "react"
 import { ChevronDown, ChevronRight } from "lucide-react"
 
-import type { BlueprintGroup, BlueprintListType, MaterialKind } from "@/lib/material-matrix"
+import type {
+  BlueprintGroup,
+  BlueprintListType,
+  MaterialKind,
+} from "@/lib/material-matrix"
 import { BLUEPRINTS } from "@/lib/data/blueprints"
 import { MATERIALS } from "@/lib/data/materials"
 import {
@@ -14,29 +18,57 @@ import {
 } from "@/lib/material-matrix"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
-const MATERIAL_KINDS: ReadonlyArray<MaterialKind> = ["encoded", "raw", "manufactured"]
+const MATERIAL_KINDS: ReadonlyArray<MaterialKind> = [
+  "encoded",
+  "raw",
+  "manufactured",
+]
 const BLUEPRINT_GROUPS = groupBlueprints(BLUEPRINTS)
 const BLUEPRINTS_BY_ID = new Map(
-  BLUEPRINT_GROUPS.flatMap((group) => group.blueprints.map((blueprint) => [blueprint.id, blueprint] as const)),
+  BLUEPRINT_GROUPS.flatMap((group) =>
+    group.blueprints.map((blueprint) => [blueprint.id, blueprint] as const),
+  ),
 )
 const MATERIAL_LOOKUP = buildMaterialLookup()
 
 export function MaterialMatrixPage() {
-  const [selectedBlueprintIds, setSelectedBlueprintIds] = useState<Set<string>>(new Set())
-  const [expandedGroupKeys, setExpandedGroupKeys] = useState<Set<string>>(new Set())
+  const [selectedBlueprintIds, setSelectedBlueprintIds] = useState<Set<string>>(
+    new Set(),
+  )
+  const [expandedGroupKeys, setExpandedGroupKeys] = useState<Set<string>>(
+    new Set(),
+  )
   const [searchQuery, setSearchQuery] = useState("")
   const [visibleTypes, setVisibleTypes] = useState<Set<BlueprintListType>>(
     new Set<BlueprintListType>(["Engineer", "Technology"]),
   )
 
   const filteredGroups = useMemo(
-    () => filterBlueprintGroups(BLUEPRINT_GROUPS, { searchQuery, visibleTypes }),
+    () =>
+      filterBlueprintGroups(BLUEPRINT_GROUPS, { searchQuery, visibleTypes }),
     [searchQuery, visibleTypes],
   )
 
@@ -128,9 +160,12 @@ export function MaterialMatrixPage() {
   return (
     <main className="mx-auto max-w-[1600px] space-y-4 p-4 md:p-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Elite Dangerous Material Matrix</h1>
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+          Elite Dangerous Material Matrix
+        </h1>
         <p className="text-muted-foreground text-sm md:text-base">
-          Select blueprint grades to see which engineering materials are needed most.
+          Select blueprint grades to see which engineering materials are needed
+          most.
         </p>
       </header>
 
@@ -139,7 +174,10 @@ export function MaterialMatrixPage() {
           <Card>
             <CardHeader>
               <CardTitle>Heatmap Legend</CardTitle>
-              <CardDescription>Green is low demand, red is high demand within your current selection.</CardDescription>
+              <CardDescription>
+                Green is low demand, red is high demand within your current
+                selection.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-[repeat(5,minmax(0,1fr))] gap-2">
@@ -149,7 +187,12 @@ export function MaterialMatrixPage() {
                     <div
                       key={step}
                       className="rounded-md border px-2 py-2 text-center text-xs font-medium"
-                      style={{ backgroundColor: computeHeatColor(sampleTotal, maxTotal) }}
+                      style={{
+                        backgroundColor: computeHeatColor(
+                          sampleTotal,
+                          maxTotal,
+                        ),
+                      }}
                     >
                       {sampleTotal}
                     </div>
@@ -157,22 +200,35 @@ export function MaterialMatrixPage() {
                 })}
               </div>
               <div className="flex flex-wrap gap-2 text-xs">
-                <Badge variant="outline">Selected grades: {selectedBlueprintIds.size}</Badge>
-                <Badge variant="outline">Tracked materials used: {selectedInTableCount}</Badge>
-                <Badge variant="outline">Ignored non-table ingredients: {unmatchedSelectedCount}</Badge>
+                <Badge variant="outline">
+                  Selected grades: {selectedBlueprintIds.size}
+                </Badge>
+                <Badge variant="outline">
+                  Tracked materials used: {selectedInTableCount}
+                </Badge>
+                <Badge variant="outline">
+                  Ignored non-table ingredients: {unmatchedSelectedCount}
+                </Badge>
               </div>
             </CardContent>
           </Card>
 
           {MATERIAL_KINDS.map((kind) => (
-            <MaterialTableCard key={kind} kind={kind} ingredientTotals={ingredientTotals} maxTotal={maxTotal} />
+            <MaterialTableCard
+              key={kind}
+              kind={kind}
+              ingredientTotals={ingredientTotals}
+              maxTotal={maxTotal}
+            />
           ))}
         </div>
 
         <Card className="h-fit xl:sticky xl:top-4">
           <CardHeader>
             <CardTitle>Blueprints</CardTitle>
-            <CardDescription>Engineer + Technology blueprints with grade-level selection.</CardDescription>
+            <CardDescription>
+              Engineer + Technology blueprints with grade-level selection.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <input
@@ -200,13 +256,20 @@ export function MaterialMatrixPage() {
               })}
             </div>
 
-            <p className="text-muted-foreground text-xs">Showing {filteredGroups.length} grouped blueprints</p>
+            <p className="text-muted-foreground text-xs">
+              Showing {filteredGroups.length} grouped blueprints
+            </p>
 
             <ScrollArea className="h-[65vh] rounded-md border p-2">
               <div className="space-y-2 pr-2">
                 {filteredGroups.map((group) => {
-                  const groupIds = group.blueprints.map((blueprint) => blueprint.id)
-                  const groupState = getParentCheckboxState(groupIds, selectedBlueprintIds)
+                  const groupIds = group.blueprints.map(
+                    (blueprint) => blueprint.id,
+                  )
+                  const groupState = getParentCheckboxState(
+                    groupIds,
+                    selectedBlueprintIds,
+                  )
                   const isExpanded = expandedGroupKeys.has(group.key)
 
                   return (
@@ -230,13 +293,19 @@ export function MaterialMatrixPage() {
                           <Checkbox
                             aria-label={`Select all grades for ${group.moduleType} ${group.name}`}
                             checked={groupState}
-                            onCheckedChange={(checked) => updateGroupSelection(group, checked === true)}
+                            onCheckedChange={(checked) =>
+                              updateGroupSelection(group, checked === true)
+                            }
                           />
                           <div className="min-w-0 flex-1 space-y-1">
                             <div className="flex items-center justify-between gap-2">
                               <div className="space-y-0.5">
-                                <p className="truncate text-sm font-medium">{group.moduleType}</p>
-                                <p className="text-muted-foreground truncate text-xs">{group.name}</p>
+                                <p className="truncate text-sm font-medium">
+                                  {group.moduleType}
+                                </p>
+                                <p className="text-muted-foreground truncate text-xs">
+                                  {group.name}
+                                </p>
                               </div>
                               <CollapsibleTrigger asChild>
                                 <Button
@@ -244,13 +313,19 @@ export function MaterialMatrixPage() {
                                   size="icon-xs"
                                   variant="ghost"
                                 >
-                                  {isExpanded ? <ChevronDown /> : <ChevronRight />}
+                                  {isExpanded ? (
+                                    <ChevronDown />
+                                  ) : (
+                                    <ChevronRight />
+                                  )}
                                 </Button>
                               </CollapsibleTrigger>
                             </div>
                             <div className="flex flex-wrap gap-1">
                               <Badge variant="secondary">{group.type}</Badge>
-                              <Badge variant="outline">Grades: {group.blueprints.length}</Badge>
+                              <Badge variant="outline">
+                                Grades: {group.blueprints.length}
+                              </Badge>
                             </div>
                           </div>
                         </div>
@@ -258,7 +333,9 @@ export function MaterialMatrixPage() {
                         <CollapsibleContent className="mt-2 space-y-2 pl-6">
                           {group.blueprints.map((blueprint) => {
                             const gradeLabel = blueprint.Grade ?? 0
-                            const checked = selectedBlueprintIds.has(blueprint.id)
+                            const checked = selectedBlueprintIds.has(
+                              blueprint.id,
+                            )
 
                             return (
                               <label
@@ -268,10 +345,18 @@ export function MaterialMatrixPage() {
                                 <Checkbox
                                   aria-label={`Select ${group.moduleType} ${group.name} grade ${gradeLabel}`}
                                   checked={checked}
-                                  onCheckedChange={(value) => updateGradeSelection(blueprint.id, value === true)}
+                                  onCheckedChange={(value) =>
+                                    updateGradeSelection(
+                                      blueprint.id,
+                                      value === true,
+                                    )
+                                  }
                                 />
                                 <span className="min-w-0 text-xs leading-relaxed">
-                                  <span className="font-medium">G{gradeLabel}</span> · {blueprint.Ingredients.length} materials
+                                  <span className="font-medium">
+                                    G{gradeLabel}
+                                  </span>{" "}
+                                  · {blueprint.Ingredients.length} materials
                                 </span>
                               </label>
                             )
@@ -282,7 +367,9 @@ export function MaterialMatrixPage() {
                   )
                 })}
                 {filteredGroups.length === 0 ? (
-                  <p className="text-muted-foreground px-2 py-4 text-center text-sm">No blueprints match your filters.</p>
+                  <p className="text-muted-foreground px-2 py-4 text-center text-sm">
+                    No blueprints match your filters.
+                  </p>
                 ) : null}
               </div>
             </ScrollArea>
@@ -303,7 +390,11 @@ function MaterialTableCard({
   maxTotal: number
 }) {
   const categories = MATERIALS[kind]
-  const maxGrade = Math.max(...categories.flatMap((category) => category.materials.map((material) => material.grade)))
+  const maxGrade = Math.max(
+    ...categories.flatMap((category) =>
+      category.materials.map((material) => material.grade),
+    ),
+  )
   const grades = Array.from({ length: maxGrade }, (_, index) => index + 1)
 
   return (
@@ -323,7 +414,10 @@ function MaterialTableCard({
           </TableHeader>
           <TableBody>
             {categories.map((category) => {
-              const byGrade = new Map<number, (typeof category.materials)[number]>()
+              const byGrade = new Map<
+                number,
+                (typeof category.materials)[number]
+              >()
               for (const material of category.materials) {
                 byGrade.set(material.grade, material)
               }
@@ -335,7 +429,10 @@ function MaterialTableCard({
                     const material = byGrade.get(grade)
                     if (!material) {
                       return (
-                        <TableCell key={grade} className="text-muted-foreground">
+                        <TableCell
+                          key={grade}
+                          className="text-muted-foreground"
+                        >
                           -
                         </TableCell>
                       )
@@ -343,10 +440,20 @@ function MaterialTableCard({
 
                     const total = ingredientTotals.get(material.name) ?? 0
                     return (
-                      <TableCell key={material.name} style={{ backgroundColor: computeHeatColor(total, maxTotal) }}>
+                      <TableCell
+                        key={material.name}
+                        style={{
+                          backgroundColor: computeHeatColor(total, maxTotal),
+                        }}
+                      >
                         <div className="space-y-0.5">
-                          <p className="text-xs leading-snug">{material.name}</p>
-                          <p className="text-muted-foreground text-[11px]" data-testid={`material-total-${toSlug(material.name)}`}>
+                          <p className="text-xs leading-snug">
+                            {material.name}
+                          </p>
+                          <p
+                            className="text-muted-foreground text-[11px]"
+                            data-testid={`material-total-${toSlug(material.name)}`}
+                          >
                             Qty: {total}
                           </p>
                         </div>

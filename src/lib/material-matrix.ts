@@ -64,23 +64,29 @@ export function groupBlueprints(blueprints: ReadonlyArray<Blueprint>) {
         name: blueprint.Name,
         engineers: blueprint.Engineers,
         blueprints: [blueprint],
-        searchText: `${blueprint.Type} ${blueprint.Name} ${blueprint.Engineers.join(" ")}`.toLowerCase(),
+        searchText:
+          `${blueprint.Type} ${blueprint.Name} ${blueprint.Engineers.join(" ")}`.toLowerCase(),
       })
       continue
     }
 
     grouped.set(key, {
       ...existing,
-      engineers: Array.from(new Set([...existing.engineers, ...blueprint.Engineers])),
+      engineers: Array.from(
+        new Set([...existing.engineers, ...blueprint.Engineers]),
+      ),
       blueprints: [...existing.blueprints, blueprint],
-      searchText: `${existing.searchText} ${blueprint.Engineers.join(" ")}`.toLowerCase(),
+      searchText:
+        `${existing.searchText} ${blueprint.Engineers.join(" ")}`.toLowerCase(),
     })
   }
 
   return Array.from(grouped.values())
     .map((group) => ({
       ...group,
-      blueprints: [...group.blueprints].sort((a, b) => (a.Grade ?? 0) - (b.Grade ?? 0)),
+      blueprints: [...group.blueprints].sort(
+        (a, b) => (a.Grade ?? 0) - (b.Grade ?? 0),
+      ),
       engineers: [...new Set(group.engineers)].sort(),
     }))
     .sort((a, b) => {
@@ -110,7 +116,10 @@ export function sumIngredientsForSelection(
     }
 
     for (const ingredient of blueprint.Ingredients) {
-      totals.set(ingredient.Name, (totals.get(ingredient.Name) ?? 0) + ingredient.Size)
+      totals.set(
+        ingredient.Name,
+        (totals.get(ingredient.Name) ?? 0) + ingredient.Size,
+      )
     }
   }
 
