@@ -26,6 +26,10 @@ export interface BlueprintFilterState {
   visibleTypes: ReadonlySet<BlueprintListType>
 }
 
+export interface SumIngredientsOptions {
+  multiplyByGrade?: boolean
+}
+
 export function buildMaterialLookup() {
   const lookup = new Map<string, MaterialCellMeta>()
 
@@ -106,8 +110,10 @@ export function groupBlueprints(blueprints: ReadonlyArray<Blueprint>) {
 export function sumIngredientsForSelection(
   selectedBlueprintIds: ReadonlySet<string>,
   blueprintsById: ReadonlyMap<string, Blueprint>,
+  options?: SumIngredientsOptions,
 ) {
   const totals = new Map<string, number>()
+  const multiplyByGrade = options?.multiplyByGrade ?? false
 
   for (const id of selectedBlueprintIds) {
     const blueprint = blueprintsById.get(id)
@@ -115,10 +121,12 @@ export function sumIngredientsForSelection(
       continue
     }
 
+    const gradeMultiplier = multiplyByGrade ? Math.max(1, blueprint.Grade ?? 1) : 1
+
     for (const ingredient of blueprint.Ingredients) {
       totals.set(
         ingredient.Name,
-        (totals.get(ingredient.Name) ?? 0) + ingredient.Size,
+        (totals.get(ingredient.Name) ?? 0) + ingredient.Size * gradeMultiplier,
       )
     }
   }

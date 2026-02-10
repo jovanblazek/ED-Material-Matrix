@@ -23,7 +23,7 @@ describe("groupBlueprints", () => {
 })
 
 describe("sumIngredientsForSelection", () => {
-  test("sums selected blueprint ingredients", () => {
+  test("sums selected blueprint ingredients without grade multipliers by default", () => {
     const first = BLUEPRINTS.find(
       (blueprint) =>
         blueprint.type === "Engineer" &&
@@ -52,6 +52,39 @@ describe("sumIngredientsForSelection", () => {
 
     expect(totals.get("Nickel")).toBe(2)
     expect(totals.get("Modified Consumer Firmware")).toBe(1)
+  })
+
+  test("applies grade multipliers when enabled", () => {
+    const first = BLUEPRINTS.find(
+      (blueprint) =>
+        blueprint.type === "Engineer" &&
+        blueprint.Type === "Plasma Accelerator" &&
+        blueprint.Name === "Short Range Blaster" &&
+        blueprint.Grade === 1,
+    )
+    const second = BLUEPRINTS.find(
+      (blueprint) =>
+        blueprint.type === "Engineer" &&
+        blueprint.Type === "Plasma Accelerator" &&
+        blueprint.Name === "Short Range Blaster" &&
+        blueprint.Grade === 2,
+    )
+
+    expect(first).toBeTruthy()
+    expect(second).toBeTruthy()
+
+    const byId = new Map(
+      [first, second]
+        .filter((value): value is NonNullable<typeof value> => Boolean(value))
+        .map((blueprint) => [blueprint.id, blueprint] as const),
+    )
+
+    const totals = sumIngredientsForSelection(new Set(byId.keys()), byId, {
+      multiplyByGrade: true,
+    })
+
+    expect(totals.get("Nickel")).toBe(3)
+    expect(totals.get("Modified Consumer Firmware")).toBe(2)
   })
 })
 

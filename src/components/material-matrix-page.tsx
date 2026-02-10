@@ -46,6 +46,15 @@ const MATERIAL_KINDS: ReadonlyArray<MaterialKind> = [
   "raw",
   "manufactured",
 ]
+const MATERIAL_GRADES = Array.from(
+  new Set(
+    MATERIAL_KINDS.flatMap((kind) =>
+      MATERIALS[kind].flatMap((category) =>
+        category.materials.map((material) => material.grade),
+      ),
+    ),
+  ),
+).sort((a, b) => a - b)
 const BLUEPRINT_GROUPS = groupBlueprints(BLUEPRINTS)
 const BLUEPRINTS_BY_ID = new Map(
   BLUEPRINT_GROUPS.flatMap((group) =>
@@ -65,19 +74,38 @@ export function MaterialMatrixPage() {
   const [visibleTypes, setVisibleTypes] = useState<Set<BlueprintListType>>(
     new Set<BlueprintListType>(["Engineer", "Technology"]),
   )
+  const [multiplyByGrade, setMultiplyByGrade] = useState(true)
+  const [showSelectedOnly, setShowSelectedOnly] = useState(false)
 
   const filteredGroups = useMemo(
     () =>
       filterBlueprintGroups(BLUEPRINT_GROUPS, { searchQuery, visibleTypes }),
     [searchQuery, visibleTypes],
   )
+  const displayedGroups = useMemo(() => {
+    if (!showSelectedOnly) {
+      return filteredGroups
+    }
+
+    return filteredGroups
+      .map((group) => ({
+        ...group,
+        blueprints: group.blueprints.filter((blueprint) =>
+          selectedBlueprintIds.has(blueprint.id),
+        ),
+      }))
+      .filter((group) => group.blueprints.length > 0)
+  }, [filteredGroups, selectedBlueprintIds, showSelectedOnly])
 
   const ingredientTotals = useMemo(
-    () => sumIngredientsForSelection(selectedBlueprintIds, BLUEPRINTS_BY_ID),
-    [selectedBlueprintIds],
+    () =>
+      sumIngredientsForSelection(selectedBlueprintIds, BLUEPRINTS_BY_ID, {
+        multiplyByGrade,
+      }),
+    [multiplyByGrade, selectedBlueprintIds],
   )
 
-  const maxTotal = useMemo(() => {
+  const selectedMaxTotal = useMemo(() => {
     let max = 0
 
     for (const kind of MATERIAL_KINDS) {
@@ -91,7 +119,23 @@ export function MaterialMatrixPage() {
       }
     }
 
-    return Math.max(1, max)
+    return max
+  }, [ingredientTotals])
+
+  const heatScaleMax = Math.max(1, selectedMaxTotal)
+  const gradeTotals = useMemo(() => {
+    const totals = new Map<number, number>()
+
+    for (const [name, total] of ingredientTotals) {
+      const material = MATERIAL_LOOKUP.get(name)
+      if (!material || total <= 0) {
+        continue
+      }
+
+      totals.set(material.grade, (totals.get(material.grade) ?? 0) + total)
+    }
+
+    return totals
   }, [ingredientTotals])
 
   const selectedInTableCount = useMemo(() => {
@@ -175,30 +219,55 @@ export function MaterialMatrixPage() {
             <CardHeader>
               <CardTitle>Heatmap Legend</CardTitle>
               <CardDescription>
-                Green is low demand, red is high demand within your current
+                Required material totals by grade for your current blueprint
                 selection.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-[repeat(5,minmax(0,1fr))] gap-2">
-                {[0, 0.25, 0.5, 0.75, 1].map((step) => {
-                  const sampleTotal = Math.round(step * maxTotal)
-                  return (
-                    <div
-                      key={step}
-                      className="rounded-md border px-2 py-2 text-center text-xs font-medium"
-                      style={{
-                        backgroundColor: computeHeatColor(
-                          sampleTotal,
-                          maxTotal,
-                        ),
-                      }}
-                    >
-                      {sampleTotal}
-                    </div>
-                  )
-                })}
+              <div
+                className="grid gap-2"
+                style={{
+                  gridTemplateColumns: `repeat(${MATERIAL_GRADES.length}, minmax(0, 1fr))`,
+                }}
+              >
+                {MATERIAL_GRADES.map((grade) => (
+                  <div key={grade} className="rounded-md border px-2 py-2">
+                    <p className="text-muted-foreground text-[11px]">
+                      Grade {grade}
+                    </p>
+                    <p className="text-sm font-medium">
+                      Qty: {gradeTotals.get(grade) ?? 0}
+                    </p>
+                  </div>
+                ))}
               </div>
+              <div className="space-y-1">
+                <div
+                  aria-hidden="true"
+                  className="h-2 rounded-full"
+                  style={{
+                    background:
+                      "linear-gradient(to right, hsl(120 75% 45% / 0.18), hsl(0 75% 45% / 0.70))",
+                  }}
+                />
+                <div className="text-muted-foreground flex justify-between text-[11px]">
+                  <span>Lower demand</span>
+                  <span>Higher demand</span>
+                </div>
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  aria-label="Multiply required materials by selected blueprint grade"
+                  checked={multiplyByGrade}
+                  onCheckedChange={(checked) =>
+                    setMultiplyByGrade(checked === true)
+                  }
+                />
+                <span>
+                  Multiply by grade for engineer blueprints (G1×1, G2×2, G3×3,
+                  G4×4, G5×5)
+                </span>
+              </label>
               <div className="flex flex-wrap gap-2 text-xs">
                 <Badge variant="outline">
                   Selected grades: {selectedBlueprintIds.size}
@@ -218,7 +287,7 @@ export function MaterialMatrixPage() {
               key={kind}
               kind={kind}
               ingredientTotals={ingredientTotals}
-              maxTotal={maxTotal}
+              maxTotal={heatScaleMax}
             />
           ))}
         </div>
@@ -255,14 +324,33 @@ export function MaterialMatrixPage() {
                 )
               })}
             </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="flex items-center gap-2 text-xs">
+                <Checkbox
+                  aria-label="Show only selected blueprints"
+                  checked={showSelectedOnly}
+                  onCheckedChange={(checked) =>
+                    setShowSelectedOnly(checked === true)
+                  }
+                />
+                <span>Show selected only</span>
+              </label>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSelectedBlueprintIds(new Set())}
+              >
+                Clear selection
+              </Button>
+            </div>
 
             <p className="text-muted-foreground text-xs">
-              Showing {filteredGroups.length} grouped blueprints
+              Showing {displayedGroups.length} grouped blueprints
             </p>
 
             <ScrollArea className="h-[65vh] rounded-md border p-2">
               <div className="space-y-2 pr-2">
-                {filteredGroups.map((group) => {
+                {displayedGroups.map((group) => {
                   const groupIds = group.blueprints.map(
                     (blueprint) => blueprint.id,
                   )
@@ -366,7 +454,7 @@ export function MaterialMatrixPage() {
                     </Collapsible>
                   )
                 })}
-                {filteredGroups.length === 0 ? (
+                {displayedGroups.length === 0 ? (
                   <p className="text-muted-foreground px-2 py-4 text-center text-sm">
                     No blueprints match your filters.
                   </p>
