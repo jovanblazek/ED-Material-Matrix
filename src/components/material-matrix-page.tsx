@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { memo, useCallback, useDeferredValue, useMemo, useState } from "react"
 import {
   ChevronDown,
   ChevronRight,
@@ -75,6 +75,11 @@ const MATERIAL_GRADES = Array.from(
     ),
   ),
 ).sort((a, b) => a - b)
+const MATERIAL_GRADES_BY_KIND: Record<MaterialKind, ReadonlyArray<number>> = {
+  encoded: buildGrades("encoded"),
+  raw: buildGrades("raw"),
+  manufactured: buildGrades("manufactured"),
+}
 const BLUEPRINT_GROUPS = groupBlueprints(BLUEPRINTS)
 const BLUEPRINTS_BY_ID = new Map(
   BLUEPRINT_GROUPS.flatMap((group) =>
@@ -113,6 +118,7 @@ export function MaterialMatrixPage() {
     new Set(),
   )
   const [searchQuery, setSearchQuery] = useState("")
+  const deferredSearchQuery = useDeferredValue(searchQuery)
   const [visibleTypes, setVisibleTypes] = useState<Set<BlueprintListType>>(
     new Set<BlueprintListType>(["Engineer", "Technology"]),
   )
@@ -124,8 +130,11 @@ export function MaterialMatrixPage() {
 
   const filteredGroups = useMemo(
     () =>
-      filterBlueprintGroups(BLUEPRINT_GROUPS, { searchQuery, visibleTypes }),
-    [searchQuery, visibleTypes],
+      filterBlueprintGroups(BLUEPRINT_GROUPS, {
+        searchQuery: deferredSearchQuery,
+        visibleTypes,
+      }),
+    [deferredSearchQuery, visibleTypes],
   )
   const displayedGroups = useMemo(() => {
     if (!showSelectedOnly) {
@@ -245,29 +254,136 @@ export function MaterialMatrixPage() {
     return count
   }, [ingredientTotals])
 
-  const setTypeVisible = (type: BlueprintListType, visible: boolean) => {
-    setVisibleTypes((current) => {
-      const next = new Set(current)
-      if (visible) {
-        next.add(type)
-      } else {
-        next.delete(type)
-      }
+  const setTypeVisible = useCallback(
+    (type: BlueprintListType, visible: boolean) => {
+      setVisibleTypes((current) => {
+        const next = new Set(current)
+        if (visible) {
+          next.add(type)
+        } else {
+          next.delete(type)
+        }
 
-      return next
-    })
-  }
+        return next
+      })
+    },
+    [],
+  )
 
-  const updateGroupSelection = (group: BlueprintGroup, checked: boolean) => {
-    setBlueprintsSelected(
-      group.blueprints.map((blueprint) => blueprint.id),
-      checked,
-    )
-  }
+  const updateGroupSelection = useCallback(
+    (group: BlueprintGroup, checked: boolean) => {
+      setBlueprintsSelected(
+        group.blueprints.map((blueprint) => blueprint.id),
+        checked,
+      )
+    },
+    [setBlueprintsSelected],
+  )
 
-  const updateGradeSelection = (id: string, checked: boolean) => {
-    setBlueprintSelected(id, checked)
-  }
+  const updateGradeSelection = useCallback(
+    (id: string, checked: boolean) => {
+      setBlueprintSelected(id, checked)
+    },
+    [setBlueprintSelected],
+  )
+
+  const renderedBlueprintGroups = useMemo(
+    () =>
+      displayedGroups.map((group) => {
+        const groupIds = group.blueprints.map((blueprint) => blueprint.id)
+        const groupState = getParentCheckboxState(groupIds, selectedBlueprintIdSet)
+        const isExpanded = expandedGroupKeys.has(group.key)
+
+        return (
+          <Collapsible
+            key={group.key}
+            open={isExpanded}
+            onOpenChange={(open) => {
+              setExpandedGroupKeys((current) => {
+                const next = new Set(current)
+                if (open) {
+                  next.add(group.key)
+                } else {
+                  next.delete(group.key)
+                }
+                return next
+              })
+            }}
+          >
+            <div className="bg-muted/35 min-w-0 rounded-md border p-2">
+              <div className="flex min-w-0 items-start gap-2">
+                <Checkbox
+                  aria-label={`Select all grades for ${group.moduleType} ${group.name}`}
+                  checked={groupState}
+                  onCheckedChange={(checked) =>
+                    updateGroupSelection(group, checked === true)
+                  }
+                />
+                <div className="min-w-0 flex-1 overflow-hidden space-y-1">
+                  <div className="flex min-w-0 items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <p className="text-sm font-medium leading-snug break-words [overflow-wrap:anywhere]">
+                        {group.moduleType}
+                      </p>
+                      <p className="text-muted-foreground text-xs leading-snug break-words [overflow-wrap:anywhere]">
+                        {group.name}
+                      </p>
+                    </div>
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        aria-label={`${isExpanded ? "Collapse" : "Expand"} ${group.moduleType} ${group.name}`}
+                        className="shrink-0"
+                        size="icon-xs"
+                        variant="ghost"
+                      >
+                        {isExpanded ? <ChevronDown /> : <ChevronRight />}
+                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge variant="secondary">{group.type}</Badge>
+                    <Badge variant="outline">Grades: {group.blueprints.length}</Badge>
+                  </div>
+                </div>
+              </div>
+
+              <CollapsibleContent className="mt-2 space-y-2 pl-6">
+                {group.blueprints.map((blueprint) => {
+                  const gradeLabel = blueprint.Grade ?? 0
+                  const checked = selectedBlueprintIdSet.has(blueprint.id)
+
+                  return (
+                    <label
+                      key={blueprint.id}
+                      className="hover:bg-accent/35 flex min-w-0 cursor-pointer items-start gap-2 rounded-md border px-2 py-1.5"
+                    >
+                      <Checkbox
+                        aria-label={`Select ${group.moduleType} ${group.name} grade ${gradeLabel}`}
+                        checked={checked}
+                        onCheckedChange={(value) =>
+                          updateGradeSelection(blueprint.id, value === true)
+                        }
+                      />
+                      <span className="min-w-0 flex-1 break-words text-xs leading-relaxed">
+                        <span className="font-medium">G{gradeLabel}</span> ·{" "}
+                        {blueprint.Ingredients.length} materials
+                      </span>
+                    </label>
+                  )
+                })}
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+        )
+      }),
+    [
+      displayedGroups,
+      expandedGroupKeys,
+      selectedBlueprintIdSet,
+      updateGradeSelection,
+      updateGroupSelection,
+    ],
+  )
 
   if (!isStoreHydrated) {
     return <main className="mx-auto max-w-[1600px] p-4 md:p-6" />
@@ -499,111 +615,7 @@ export function MaterialMatrixPage() {
 
             <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden rounded-md border p-2">
               <div className="min-w-0 space-y-2 pr-2">
-                {displayedGroups.map((group) => {
-                  const groupIds = group.blueprints.map(
-                    (blueprint) => blueprint.id,
-                  )
-                  const groupState = getParentCheckboxState(
-                    groupIds,
-                    selectedBlueprintIdSet,
-                  )
-                  const isExpanded = expandedGroupKeys.has(group.key)
-
-                  return (
-                    <Collapsible
-                      key={group.key}
-                      open={isExpanded}
-                      onOpenChange={(open) => {
-                        setExpandedGroupKeys((current) => {
-                          const next = new Set(current)
-                          if (open) {
-                            next.add(group.key)
-                          } else {
-                            next.delete(group.key)
-                          }
-                          return next
-                        })
-                      }}
-                    >
-                      <div className="bg-muted/35 min-w-0 rounded-md border p-2">
-                        <div className="flex min-w-0 items-start gap-2">
-                          <Checkbox
-                            aria-label={`Select all grades for ${group.moduleType} ${group.name}`}
-                            checked={groupState}
-                            onCheckedChange={(checked) =>
-                              updateGroupSelection(group, checked === true)
-                            }
-                          />
-                          <div className="min-w-0 flex-1 overflow-hidden space-y-1">
-                            <div className="flex min-w-0 items-center justify-between gap-2">
-                              <div className="min-w-0 flex-1 space-y-0.5">
-                                <p className="text-sm font-medium leading-snug break-words [overflow-wrap:anywhere]">
-                                  {group.moduleType}
-                                </p>
-                                <p className="text-muted-foreground text-xs leading-snug break-words [overflow-wrap:anywhere]">
-                                  {group.name}
-                                </p>
-                              </div>
-                              <CollapsibleTrigger asChild>
-                                <Button
-                                  aria-label={`${isExpanded ? "Collapse" : "Expand"} ${group.moduleType} ${group.name}`}
-                                  className="shrink-0"
-                                  size="icon-xs"
-                                  variant="ghost"
-                                >
-                                  {isExpanded ? (
-                                    <ChevronDown />
-                                  ) : (
-                                    <ChevronRight />
-                                  )}
-                                </Button>
-                              </CollapsibleTrigger>
-                            </div>
-                            <div className="flex flex-wrap gap-1">
-                              <Badge variant="secondary">{group.type}</Badge>
-                              <Badge variant="outline">
-                                Grades: {group.blueprints.length}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-
-                        <CollapsibleContent className="mt-2 space-y-2 pl-6">
-                          {group.blueprints.map((blueprint) => {
-                            const gradeLabel = blueprint.Grade ?? 0
-                            const checked = selectedBlueprintIdSet.has(
-                              blueprint.id,
-                            )
-
-                            return (
-                              <label
-                                key={blueprint.id}
-                                className="hover:bg-accent/35 flex min-w-0 cursor-pointer items-start gap-2 rounded-md border px-2 py-1.5"
-                              >
-                                <Checkbox
-                                  aria-label={`Select ${group.moduleType} ${group.name} grade ${gradeLabel}`}
-                                  checked={checked}
-                                  onCheckedChange={(value) =>
-                                    updateGradeSelection(
-                                      blueprint.id,
-                                      value === true,
-                                    )
-                                  }
-                                />
-                                <span className="min-w-0 flex-1 break-words text-xs leading-relaxed">
-                                  <span className="font-medium">
-                                    G{gradeLabel}
-                                  </span>{" "}
-                                  · {blueprint.Ingredients.length} materials
-                                </span>
-                              </label>
-                            )
-                          })}
-                        </CollapsibleContent>
-                      </div>
-                    </Collapsible>
-                  )
-                })}
+                {renderedBlueprintGroups}
                 {displayedGroups.length === 0 ? (
                   <p className="text-muted-foreground px-2 py-4 text-center text-sm">
                     No blueprints match your filters.
@@ -618,7 +630,7 @@ export function MaterialMatrixPage() {
   )
 }
 
-function MaterialTableCard({
+const MaterialTableCard = memo(function MaterialTableCard({
   kind,
   ingredientTotals,
   minTotal,
@@ -630,12 +642,7 @@ function MaterialTableCard({
   maxTotal: number
 }) {
   const categories = MATERIALS[kind]
-  const maxGrade = Math.max(
-    ...categories.flatMap((category) =>
-      category.materials.map((material) => material.grade),
-    ),
-  )
-  const grades = Array.from({ length: maxGrade }, (_, index) => index + 1)
+  const grades = MATERIAL_GRADES_BY_KIND[kind]
 
   return (
     <Card>
@@ -712,11 +719,20 @@ function MaterialTableCard({
       </CardContent>
     </Card>
   )
-}
+})
 
 function toSlug(value: string) {
   return value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
+}
+
+function buildGrades(kind: MaterialKind) {
+  const maxGrade = Math.max(
+    ...MATERIALS[kind].flatMap((category) =>
+      category.materials.map((material) => material.grade),
+    ),
+  )
+  return Array.from({ length: maxGrade }, (_, index) => index + 1)
 }
