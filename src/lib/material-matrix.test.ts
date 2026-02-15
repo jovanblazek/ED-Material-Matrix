@@ -103,6 +103,16 @@ describe("computeHeatColor", () => {
     expect(mid).toContain("60.0")
     expect(high).toContain("0.0")
   })
+
+  test("supports custom minimums for normalization", () => {
+    const low = computeHeatColor(2, 10, 2)
+    const mid = computeHeatColor(6, 10, 2)
+    const high = computeHeatColor(10, 10, 2)
+
+    expect(low).toContain("120.0")
+    expect(mid).toContain("60.0")
+    expect(high).toContain("0.0")
+  })
 })
 
 describe("getParentCheckboxState", () => {

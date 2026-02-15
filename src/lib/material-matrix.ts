@@ -183,9 +183,15 @@ export function filterBlueprintGroups(
   })
 }
 
-export function computeHeatColor(total: number, maxTotal: number) {
-  const safeMax = Math.max(1, maxTotal)
-  const intensity = Math.min(1, Math.max(0, total / safeMax))
+export function computeHeatColor(
+  total: number,
+  maxTotal: number,
+  minTotal = 0,
+) {
+  const span = maxTotal - minTotal
+  const rawIntensity =
+    span <= 0 ? (total > minTotal ? 1 : 0) : (total - minTotal) / span
+  const intensity = Math.min(1, Math.max(0, rawIntensity))
   const hue = 120 - 120 * intensity
   const alpha = 0.18 + intensity * 0.52
 

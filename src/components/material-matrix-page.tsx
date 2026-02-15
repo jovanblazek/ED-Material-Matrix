@@ -76,6 +76,7 @@ export function MaterialMatrixPage() {
   )
   const [multiplyByGrade, setMultiplyByGrade] = useState(true)
   const [showSelectedOnly, setShowSelectedOnly] = useState(false)
+  const [normalizePerTable, setNormalizePerTable] = useState(true)
 
   const filteredGroups = useMemo(
     () =>
@@ -109,13 +110,17 @@ export function MaterialMatrixPage() {
     [multiplyByGrade, selectedBlueprintIds],
   )
 
-  const selectedMaxTotal = useMemo(() => {
-    let max = 0
+  const globalHeatRange = useMemo(() => {
+    let min = Number.POSITIVE_INFINITY
+    let max = Number.NEGATIVE_INFINITY
 
     for (const kind of MATERIAL_KINDS) {
       for (const category of MATERIALS[kind]) {
         for (const material of category.materials) {
           const total = ingredientTotals.get(material.name) ?? 0
+          if (total < min) {
+            min = total
+          }
           if (total > max) {
             max = total
           }
@@ -123,10 +128,39 @@ export function MaterialMatrixPage() {
       }
     }
 
-    return max
-  }, [ingredientTotals])
+    if (!Number.isFinite(min) || !Number.isFinite(max)) {
+      return { min: 0, max: 0 }
+    }
 
-  const heatScaleMax = Math.max(1, selectedMaxTotal)
+    return { min, max }
+  }, [ingredientTotals])
+  const tableHeatRanges = useMemo(() => {
+    const ranges = new Map<MaterialKind, { min: number; max: number }>()
+
+    for (const kind of MATERIAL_KINDS) {
+      let min = Number.POSITIVE_INFINITY
+      let max = Number.NEGATIVE_INFINITY
+
+      for (const category of MATERIALS[kind]) {
+        for (const material of category.materials) {
+          const total = ingredientTotals.get(material.name) ?? 0
+          if (total < min) {
+            min = total
+          }
+          if (total > max) {
+            max = total
+          }
+        }
+      }
+
+      ranges.set(kind, {
+        min: Number.isFinite(min) ? min : 0,
+        max: Number.isFinite(max) ? max : 0,
+      })
+    }
+
+    return ranges
+  }, [ingredientTotals])
   const gradeTotals = useMemo(() => {
     const totals = new Map<number, number>()
 
@@ -272,6 +306,16 @@ export function MaterialMatrixPage() {
                   G4×4, G5×5)
                 </span>
               </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  aria-label="Normalize table colors independently"
+                  checked={normalizePerTable}
+                  onCheckedChange={(checked) =>
+                    setNormalizePerTable(checked === true)
+                  }
+                />
+                <span>Normalize heat colors independently per table</span>
+              </label>
               <div className="flex flex-wrap gap-2 text-xs">
                 <Badge variant="outline">
                   Selected grades: {selectedBlueprintIds.size}
@@ -291,7 +335,16 @@ export function MaterialMatrixPage() {
               key={kind}
               kind={kind}
               ingredientTotals={ingredientTotals}
-              maxTotal={heatScaleMax}
+              minTotal={
+                normalizePerTable
+                  ? (tableHeatRanges.get(kind)?.min ?? 0)
+                  : globalHeatRange.min
+              }
+              maxTotal={
+                normalizePerTable
+                  ? (tableHeatRanges.get(kind)?.max ?? 0)
+                  : globalHeatRange.max
+              }
             />
           ))}
         </div>
@@ -491,10 +544,12 @@ export function MaterialMatrixPage() {
 function MaterialTableCard({
   kind,
   ingredientTotals,
+  minTotal,
   maxTotal,
 }: {
   kind: MaterialKind
   ingredientTotals: ReadonlyMap<string, number>
+  minTotal: number
   maxTotal: number
 }) {
   const categories = MATERIALS[kind]
@@ -551,7 +606,11 @@ function MaterialTableCard({
                       <TableCell
                         key={material.name}
                         style={{
-                          backgroundColor: computeHeatColor(total, maxTotal),
+                          backgroundColor: computeHeatColor(
+                            total,
+                            maxTotal,
+                            minTotal,
+                          ),
                         }}
                       >
                         <div className="space-y-0.5">
