@@ -3,6 +3,7 @@ import { MATERIALS } from "@/lib/data/materials"
 
 export type MaterialKind = keyof typeof MATERIALS
 export type BlueprintListType = "Engineer" | "Technology"
+const EXCLUDED_BLUEPRINT_MODULE_TYPES = new Set(["weapon", "suit"])
 
 export interface MaterialCellMeta {
   kind: MaterialKind
@@ -54,6 +55,9 @@ export function groupBlueprints(blueprints: ReadonlyArray<Blueprint>) {
 
   for (const blueprint of blueprints) {
     if (blueprint.type !== "Engineer" && blueprint.type !== "Technology") {
+      continue
+    }
+    if (EXCLUDED_BLUEPRINT_MODULE_TYPES.has(blueprint.Type.toLowerCase())) {
       continue
     }
 

@@ -19,6 +19,11 @@ describe("groupBlueprints", () => {
       const sorted = [...grades].sort((a, b) => a - b)
       expect(grades).toEqual(sorted)
     }
+    expect(
+      groups.some(
+        (group) => group.moduleType === "Weapon" || group.moduleType === "Suit",
+      ),
+    ).toBe(false)
   })
 })
 

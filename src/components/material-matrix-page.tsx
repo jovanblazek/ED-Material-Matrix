@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { ChevronDown, ChevronRight, Trash2Icon, TrashIcon } from "lucide-react"
+import { ChevronDown, ChevronRight, Trash2Icon } from "lucide-react"
 
 import type {
   BlueprintGroup,
@@ -96,6 +96,10 @@ export function MaterialMatrixPage() {
       }))
       .filter((group) => group.blueprints.length > 0)
   }, [filteredGroups, selectedBlueprintIds, showSelectedOnly])
+  const filteredBlueprintIds = useMemo(
+    () => filteredGroups.flatMap((group) => group.blueprints.map((bp) => bp.id)),
+    [filteredGroups],
+  )
 
   const ingredientTotals = useMemo(
     () =>
@@ -213,8 +217,8 @@ export function MaterialMatrixPage() {
         </p>
       </header>
 
-      <section className="grid gap-4 xl:grid-cols-[1.7fr_1fr]">
-        <div className="space-y-4">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Heatmap Legend</CardTitle>
@@ -292,11 +296,11 @@ export function MaterialMatrixPage() {
           ))}
         </div>
 
-        <Card className="h-fit xl:sticky xl:top-4 gap-2">
+        <Card className="min-w-0 w-full overflow-x-hidden gap-2 xl:sticky xl:top-4 xl:h-[calc(100vh-2rem)]">
           <CardHeader>
             <CardTitle>Blueprints</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="flex min-h-0 min-w-0 flex-1 flex-col space-y-3">
             <input
               aria-label="Search blueprints"
               className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-sm outline-none focus-visible:ring-2"
@@ -332,21 +336,39 @@ export function MaterialMatrixPage() {
                 />
                 <span>Show selected only</span>
               </label>
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={() => setSelectedBlueprintIds(new Set())}
-              >
-                <Trash2Icon className="text-destructive" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={filteredBlueprintIds.length === 0}
+                  onClick={() =>
+                    setSelectedBlueprintIds((current) => {
+                      const next = new Set(current)
+                      for (const id of filteredBlueprintIds) {
+                        next.add(id)
+                      }
+                      return next
+                    })
+                  }
+                >
+                  Select filtered
+                </Button>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => setSelectedBlueprintIds(new Set())}
+                >
+                  <Trash2Icon className="text-destructive" />
+                </Button>
+              </div>
             </div>
 
             <p className="text-muted-foreground text-xs">
               {displayedGroups.length} blueprints
             </p>
 
-            <ScrollArea className="h-[65vh] rounded-md border p-2">
-              <div className="space-y-2 pr-2">
+            <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden rounded-md border p-2">
+              <div className="min-w-0 space-y-2 pr-2">
                 {displayedGroups.map((group) => {
                   const groupIds = group.blueprints.map(
                     (blueprint) => blueprint.id,
@@ -373,8 +395,8 @@ export function MaterialMatrixPage() {
                         })
                       }}
                     >
-                      <div className="bg-muted/35 rounded-md border p-2">
-                        <div className="flex items-start gap-2">
+                      <div className="bg-muted/35 min-w-0 rounded-md border p-2">
+                        <div className="flex min-w-0 items-start gap-2">
                           <Checkbox
                             aria-label={`Select all grades for ${group.moduleType} ${group.name}`}
                             checked={groupState}
@@ -382,19 +404,20 @@ export function MaterialMatrixPage() {
                               updateGroupSelection(group, checked === true)
                             }
                           />
-                          <div className="min-w-0 flex-1 space-y-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="space-y-0.5">
+                          <div className="min-w-0 flex-1 overflow-hidden space-y-1">
+                            <div className="flex min-w-0 items-center justify-between gap-2">
+                              <div className="min-w-0 flex-1 space-y-0.5">
                                 <p className="truncate text-sm font-medium">
                                   {group.moduleType}
                                 </p>
-                                <p className="text-muted-foreground truncate text-xs">
+                                <p className="text-muted-foreground text-xs leading-snug break-words [overflow-wrap:anywhere]">
                                   {group.name}
                                 </p>
                               </div>
                               <CollapsibleTrigger asChild>
                                 <Button
                                   aria-label={`${isExpanded ? "Collapse" : "Expand"} ${group.moduleType} ${group.name}`}
+                                  className="shrink-0"
                                   size="icon-xs"
                                   variant="ghost"
                                 >
@@ -425,7 +448,7 @@ export function MaterialMatrixPage() {
                             return (
                               <label
                                 key={blueprint.id}
-                                className="hover:bg-accent/35 flex cursor-pointer items-start gap-2 rounded-md border px-2 py-1.5"
+                                className="hover:bg-accent/35 flex min-w-0 cursor-pointer items-start gap-2 rounded-md border px-2 py-1.5"
                               >
                                 <Checkbox
                                   aria-label={`Select ${group.moduleType} ${group.name} grade ${gradeLabel}`}
@@ -437,7 +460,7 @@ export function MaterialMatrixPage() {
                                     )
                                   }
                                 />
-                                <span className="min-w-0 text-xs leading-relaxed">
+                                <span className="min-w-0 flex-1 break-words text-xs leading-relaxed">
                                   <span className="font-medium">
                                     G{gradeLabel}
                                   </span>{" "}
