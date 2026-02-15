@@ -16,6 +16,10 @@ import {
   groupBlueprints,
   sumIngredientsForSelection,
 } from "@/lib/material-matrix"
+import {
+  useMaterialMatrixStore,
+  useMaterialMatrixStoreHydrated,
+} from "@/lib/state/material-matrix-store"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -64,8 +68,30 @@ const BLUEPRINTS_BY_ID = new Map(
 const MATERIAL_LOOKUP = buildMaterialLookup()
 
 export function MaterialMatrixPage() {
-  const [selectedBlueprintIds, setSelectedBlueprintIds] = useState<Set<string>>(
-    new Set(),
+  const isStoreHydrated = useMaterialMatrixStoreHydrated()
+  const selectedBlueprintIds = useMaterialMatrixStore(
+    (state) => state.selectedBlueprintIds,
+  )
+  const multiplyByGrade = useMaterialMatrixStore(
+    (state) => state.multiplyByGrade,
+  )
+  const normalizePerTable = useMaterialMatrixStore(
+    (state) => state.normalizePerTable,
+  )
+  const setBlueprintSelected = useMaterialMatrixStore(
+    (state) => state.setBlueprintSelected,
+  )
+  const setBlueprintsSelected = useMaterialMatrixStore(
+    (state) => state.setBlueprintsSelected,
+  )
+  const clearSelectedBlueprints = useMaterialMatrixStore(
+    (state) => state.clearSelectedBlueprints,
+  )
+  const setMultiplyByGrade = useMaterialMatrixStore(
+    (state) => state.setMultiplyByGrade,
+  )
+  const setNormalizePerTable = useMaterialMatrixStore(
+    (state) => state.setNormalizePerTable,
   )
   const [expandedGroupKeys, setExpandedGroupKeys] = useState<Set<string>>(
     new Set(),
@@ -74,9 +100,11 @@ export function MaterialMatrixPage() {
   const [visibleTypes, setVisibleTypes] = useState<Set<BlueprintListType>>(
     new Set<BlueprintListType>(["Engineer", "Technology"]),
   )
-  const [multiplyByGrade, setMultiplyByGrade] = useState(true)
   const [showSelectedOnly, setShowSelectedOnly] = useState(false)
-  const [normalizePerTable, setNormalizePerTable] = useState(true)
+  const selectedBlueprintIdSet = useMemo(
+    () => new Set(selectedBlueprintIds),
+    [selectedBlueprintIds],
+  )
 
   const filteredGroups = useMemo(
     () =>
@@ -92,11 +120,11 @@ export function MaterialMatrixPage() {
       .map((group) => ({
         ...group,
         blueprints: group.blueprints.filter((blueprint) =>
-          selectedBlueprintIds.has(blueprint.id),
+          selectedBlueprintIdSet.has(blueprint.id),
         ),
       }))
       .filter((group) => group.blueprints.length > 0)
-  }, [filteredGroups, selectedBlueprintIds, showSelectedOnly])
+  }, [filteredGroups, selectedBlueprintIdSet, showSelectedOnly])
   const filteredBlueprintIds = useMemo(
     () => filteredGroups.flatMap((group) => group.blueprints.map((bp) => bp.id)),
     [filteredGroups],
@@ -104,10 +132,10 @@ export function MaterialMatrixPage() {
 
   const ingredientTotals = useMemo(
     () =>
-      sumIngredientsForSelection(selectedBlueprintIds, BLUEPRINTS_BY_ID, {
+      sumIngredientsForSelection(selectedBlueprintIdSet, BLUEPRINTS_BY_ID, {
         multiplyByGrade,
       }),
-    [multiplyByGrade, selectedBlueprintIds],
+    [multiplyByGrade, selectedBlueprintIdSet],
   )
 
   const globalHeatRange = useMemo(() => {
@@ -214,29 +242,18 @@ export function MaterialMatrixPage() {
   }
 
   const updateGroupSelection = (group: BlueprintGroup, checked: boolean) => {
-    setSelectedBlueprintIds((current) => {
-      const next = new Set(current)
-      for (const blueprint of group.blueprints) {
-        if (checked) {
-          next.add(blueprint.id)
-        } else {
-          next.delete(blueprint.id)
-        }
-      }
-      return next
-    })
+    setBlueprintsSelected(
+      group.blueprints.map((blueprint) => blueprint.id),
+      checked,
+    )
   }
 
   const updateGradeSelection = (id: string, checked: boolean) => {
-    setSelectedBlueprintIds((current) => {
-      const next = new Set(current)
-      if (checked) {
-        next.add(id)
-      } else {
-        next.delete(id)
-      }
-      return next
-    })
+    setBlueprintSelected(id, checked)
+  }
+
+  if (!isStoreHydrated) {
+    return <main className="mx-auto max-w-[1600px] p-4 md:p-6" />
   }
 
   return (
@@ -318,7 +335,7 @@ export function MaterialMatrixPage() {
               </label>
               <div className="flex flex-wrap gap-2 text-xs">
                 <Badge variant="outline">
-                  Selected grades: {selectedBlueprintIds.size}
+                  Selected grades: {selectedBlueprintIds.length}
                 </Badge>
                 <Badge variant="outline">
                   Tracked materials used: {selectedInTableCount}
@@ -394,22 +411,14 @@ export function MaterialMatrixPage() {
                   size="sm"
                   variant="outline"
                   disabled={filteredBlueprintIds.length === 0}
-                  onClick={() =>
-                    setSelectedBlueprintIds((current) => {
-                      const next = new Set(current)
-                      for (const id of filteredBlueprintIds) {
-                        next.add(id)
-                      }
-                      return next
-                    })
-                  }
+                  onClick={() => setBlueprintsSelected(filteredBlueprintIds, true)}
                 >
                   Select filtered
                 </Button>
                 <Button
                   size="icon"
                   variant="outline"
-                  onClick={() => setSelectedBlueprintIds(new Set())}
+                  onClick={clearSelectedBlueprints}
                 >
                   <Trash2Icon className="text-destructive" />
                 </Button>
@@ -428,7 +437,7 @@ export function MaterialMatrixPage() {
                   )
                   const groupState = getParentCheckboxState(
                     groupIds,
-                    selectedBlueprintIds,
+                    selectedBlueprintIdSet,
                   )
                   const isExpanded = expandedGroupKeys.has(group.key)
 
@@ -494,7 +503,7 @@ export function MaterialMatrixPage() {
                         <CollapsibleContent className="mt-2 space-y-2 pl-6">
                           {group.blueprints.map((blueprint) => {
                             const gradeLabel = blueprint.Grade ?? 0
-                            const checked = selectedBlueprintIds.has(
+                            const checked = selectedBlueprintIdSet.has(
                               blueprint.id,
                             )
 
