@@ -469,7 +469,7 @@ export function MaterialMatrixPage() {
                           <div className="min-w-0 flex-1 overflow-hidden space-y-1">
                             <div className="flex min-w-0 items-center justify-between gap-2">
                               <div className="min-w-0 flex-1 space-y-0.5">
-                                <p className="truncate text-sm font-medium">
+                                <p className="text-sm font-medium leading-snug break-words [overflow-wrap:anywhere]">
                                   {group.moduleType}
                                 </p>
                                 <p className="text-muted-foreground text-xs leading-snug break-words [overflow-wrap:anywhere]">
