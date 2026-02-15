@@ -27,6 +27,7 @@ export const Route = createRootRoute({
   }),
 
   shellComponent: RootDocument,
+  notFoundComponent: RootNotFound,
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
@@ -51,5 +52,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <Scripts />
       </body>
     </html>
+  )
+}
+
+function RootNotFound() {
+  return (
+    <main className="mx-auto max-w-[1600px] p-4 md:p-6">
+      <p className="text-muted-foreground text-sm">Page not found.</p>
+    </main>
   )
 }

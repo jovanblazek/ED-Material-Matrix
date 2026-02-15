@@ -25,7 +25,7 @@
   - Thin route file; renders `MaterialMatrixPage`.
 - Main feature UI: `src/components/material-matrix-page.tsx`
   - Uses Zustand store for persisted material-selection state and legend toggles.
-  - Local state remains for transient UI controls (expanded groups, search, type filters).
+  - Local state remains for transient UI controls (expanded groups, search, type filters, show-selected toggle).
   - Renders legend card, 3 tables, and blueprint panel.
 - Persisted state store: `src/lib/state/material-matrix-store.ts`
   - Persists to localStorage: `selectedBlueprintIds`, `multiplyByGrade`, `normalizePerTable`.
@@ -44,7 +44,9 @@
 - Blueprint scope: only `Engineer` + `Technology` entries are included in grouping/filtering.
 - Grouping key: `type + Type + Name`; grade variants are selectable children.
 - Parent checkbox toggles all grades in a group; supports indeterminate state.
-- Search targets module type, blueprint name, and engineer names.
+- Search targets module type, blueprint name, and engineer names (with deferred filtering for smoother typing).
+- Blueprint filter controls are in a dropdown menu (`Engineer`, `Technology`, and `Show selected only`).
+- Clearing selected blueprints is behind a dropdown menu confirmation item.
 - Heatmap color uses dynamic normalization (`0` -> green, current selected max -> red).
 - Heatmap normalization can be toggled: per-table min/max (default) or shared global min/max.
 - Non-matrix ingredients are intentionally ignored in table totals (tracked as "ignored" count in UI).

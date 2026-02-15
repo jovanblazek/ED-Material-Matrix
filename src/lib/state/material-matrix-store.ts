@@ -13,6 +13,15 @@ interface MaterialMatrixStoreState {
   setNormalizePerTable: (value: boolean) => void
 }
 
+const NOOP_STORAGE: Storage = {
+  getItem: () => null,
+  setItem: () => undefined,
+  removeItem: () => undefined,
+  clear: () => undefined,
+  key: () => null,
+  length: 0,
+}
+
 export const useMaterialMatrixStore = create<MaterialMatrixStoreState>()(
   persist(
     (set) => ({
@@ -47,7 +56,9 @@ export const useMaterialMatrixStore = create<MaterialMatrixStoreState>()(
     }),
     {
       name: "material-matrix-store",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() =>
+        typeof window === "undefined" ? NOOP_STORAGE : window.localStorage,
+      ),
       partialize: (state) => ({
         selectedBlueprintIds: state.selectedBlueprintIds,
         multiplyByGrade: state.multiplyByGrade,
@@ -58,26 +69,24 @@ export const useMaterialMatrixStore = create<MaterialMatrixStoreState>()(
 )
 
 export function useMaterialMatrixStoreHydrated() {
-  const [hydrated, setHydrated] = useState(
-    useMaterialMatrixStore.persist.hasHydrated(),
-  )
+  const persistApi = useMaterialMatrixStore.persist
+  const [hydrated, setHydrated] = useState(persistApi.hasHydrated())
 
   useEffect(() => {
-    const unsubscribeHydrate = useMaterialMatrixStore.persist.onHydrate(() => {
+    const unsubscribeHydrate = persistApi.onHydrate(() => {
       setHydrated(false)
     })
-    const unsubscribeFinishHydration =
-      useMaterialMatrixStore.persist.onFinishHydration(() => {
-        setHydrated(true)
-      })
+    const unsubscribeFinishHydration = persistApi.onFinishHydration(() => {
+      setHydrated(true)
+    })
 
-    setHydrated(useMaterialMatrixStore.persist.hasHydrated())
+    setHydrated(persistApi.hasHydrated())
 
     return () => {
       unsubscribeHydrate()
       unsubscribeFinishHydration()
     }
-  }, [])
+  }, [persistApi])
 
   return hydrated
 }
