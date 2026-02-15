@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { ChevronDown, ChevronRight } from "lucide-react"
+import { ChevronDown, ChevronRight, Trash2Icon, TrashIcon } from "lucide-react"
 
 import type {
   BlueprintGroup,
@@ -292,12 +292,9 @@ export function MaterialMatrixPage() {
           ))}
         </div>
 
-        <Card className="h-fit xl:sticky xl:top-4">
+        <Card className="h-fit xl:sticky xl:top-4 gap-2">
           <CardHeader>
             <CardTitle>Blueprints</CardTitle>
-            <CardDescription>
-              Engineer + Technology blueprints with grade-level selection.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <input
@@ -336,16 +333,16 @@ export function MaterialMatrixPage() {
                 <span>Show selected only</span>
               </label>
               <Button
-                size="sm"
+                size="icon"
                 variant="outline"
                 onClick={() => setSelectedBlueprintIds(new Set())}
               >
-                Clear selection
+                <Trash2Icon className="text-destructive" />
               </Button>
             </div>
 
             <p className="text-muted-foreground text-xs">
-              Showing {displayedGroups.length} grouped blueprints
+              {displayedGroups.length} blueprints
             </p>
 
             <ScrollArea className="h-[65vh] rounded-md border p-2">
