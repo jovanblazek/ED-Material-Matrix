@@ -1,5 +1,11 @@
 import { useMemo, useState } from "react"
-import { ChevronDown, ChevronRight, Trash2Icon } from "lucide-react"
+import {
+  ChevronDown,
+  ChevronRight,
+  SearchIcon,
+  SlidersHorizontal,
+  Trash2Icon,
+} from "lucide-react"
 
 import type {
   BlueprintGroup,
@@ -36,6 +42,15 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Table,
   TableBody,
@@ -230,13 +245,13 @@ export function MaterialMatrixPage() {
     return count
   }, [ingredientTotals])
 
-  const handleTypeToggle = (type: BlueprintListType) => {
+  const setTypeVisible = (type: BlueprintListType, visible: boolean) => {
     setVisibleTypes((current) => {
       const next = new Set(current)
-      if (next.has(type)) {
-        next.delete(type)
-      } else {
+      if (visible) {
         next.add(type)
+      } else {
+        next.delete(type)
       }
 
       return next
@@ -387,47 +402,69 @@ export function MaterialMatrixPage() {
           ))}
         </div>
 
-        <Card className="min-w-0 w-full overflow-x-hidden gap-2 xl:sticky xl:top-4 xl:h-[calc(100vh-2rem)]">
+        <Card className="min-w-0 w-full overflow-x-hidden gap-4 xl:sticky xl:top-4 xl:h-[calc(100vh-2rem)]">
           <CardHeader>
             <CardTitle>Blueprints</CardTitle>
+            <CardDescription>
+              Search and filter blueprints by module, blueprint, or engineer.
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex min-h-0 min-w-0 flex-1 flex-col space-y-3">
-            <input
-              aria-label="Search blueprints"
-              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-sm outline-none focus-visible:ring-2"
-              placeholder="Search by module, blueprint, or engineer"
-              type="text"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-
             <div className="flex gap-2">
-              {(["Engineer", "Technology"] as const).map((type) => {
-                const active = visibleTypes.has(type)
-                return (
-                  <Button
-                    key={type}
-                    size="sm"
-                    variant={active ? "default" : "outline"}
-                    onClick={() => handleTypeToggle(type)}
-                  >
-                    {type}
-                  </Button>
-                )
-              })}
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <label className="flex items-center gap-2 text-xs">
-                <Checkbox
-                  aria-label="Show only selected blueprints"
-                  checked={showSelectedOnly}
-                  onCheckedChange={(checked) =>
-                    setShowSelectedOnly(checked === true)
-                  }
+              <div className="relative flex-1">
+                <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                <input
+                  aria-label="Search blueprints"
+                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring w-full rounded-md border py-2 pr-3 pl-9 text-sm outline-none focus-visible:ring-2"
+                  placeholder="Search"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
                 />
-                <span>Show selected only</span>
-              </label>
-              <div className="flex items-center gap-2">
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    aria-label="Open blueprint filters"
+                    size="icon"
+                    variant="outline"
+                  >
+                    <SlidersHorizontal />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuGroup>
+                    {(["Engineer", "Technology"] as const).map((type) => (
+                      <DropdownMenuCheckboxItem
+                        key={type}
+                        checked={visibleTypes.has(type)}
+                        onCheckedChange={(checked) =>
+                          setTypeVisible(type, checked === true)
+                        }
+                      >
+                        {type}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuCheckboxItem
+                      checked={showSelectedOnly}
+                      onCheckedChange={(checked) =>
+                        setShowSelectedOnly(checked === true)
+                      }
+                    >
+                      Show selected only
+                    </DropdownMenuCheckboxItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-muted-foreground text-xs">
+                {displayedGroups.length} blueprints
+              </p>
+              <div className="flex items-center gap-3">
                 <Button
                   size="sm"
                   variant="outline"
@@ -438,19 +475,27 @@ export function MaterialMatrixPage() {
                 >
                   Select filtered
                 </Button>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  onClick={clearSelectedBlueprints}
-                >
-                  <Trash2Icon className="text-destructive" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      aria-label="Open clear selected blueprints menu"
+                      size="icon-sm"
+                      variant="outline"
+                    >
+                      <Trash2Icon className="text-destructive" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={clearSelectedBlueprints}
+                    >
+                      Clear selected blueprints
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
-
-            <p className="text-muted-foreground text-xs">
-              {displayedGroups.length} blueprints
-            </p>
 
             <ScrollArea className="min-h-0 w-full flex-1 overflow-hidden rounded-md border p-2">
               <div className="min-w-0 space-y-2 pr-2">
