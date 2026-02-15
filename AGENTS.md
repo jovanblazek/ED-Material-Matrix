@@ -24,8 +24,12 @@
 - Home route: `src/routes/index.tsx`
   - Thin route file; renders `MaterialMatrixPage`.
 - Main feature UI: `src/components/material-matrix-page.tsx`
-  - Local state for selected grades, expanded groups, search, and type filters.
+  - Uses Zustand store for persisted material-selection state and legend toggles.
+  - Local state remains for transient UI controls (expanded groups, search, type filters).
   - Renders legend card, 3 tables, and blueprint panel.
+- Persisted state store: `src/lib/state/material-matrix-store.ts`
+  - Persists to localStorage: `selectedBlueprintIds`, `multiplyByGrade`, `normalizePerTable`.
+  - Exposes hydration helper to avoid first-render flicker before persisted values load.
 - Pure feature logic: `src/lib/material-matrix.ts`
   - `groupBlueprints`, `sumIngredientsForSelection`, `filterBlueprintGroups`, `getParentCheckboxState`, `computeHeatColor`, `buildMaterialLookup`.
   - Prefer adding logic here for testability.
@@ -42,6 +46,7 @@
 - Parent checkbox toggles all grades in a group; supports indeterminate state.
 - Search targets module type, blueprint name, and engineer names.
 - Heatmap color uses dynamic normalization (`0` -> green, current selected max -> red).
+- Heatmap normalization can be toggled: per-table min/max (default) or shared global min/max.
 - Non-matrix ingredients are intentionally ignored in table totals (tracked as "ignored" count in UI).
 
 ## Data Shape Notes
